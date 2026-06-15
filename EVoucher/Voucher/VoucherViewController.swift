@@ -5,18 +5,18 @@ import RxCocoa
 class VoucherViewController: UIViewController {
     @IBOutlet weak var contentView: UIView!
     @IBOutlet weak var scrollView: UIScrollView!
-    @IBOutlet weak var paymentButton: UIButton!
+    @IBOutlet weak var paymentButton: BorderedButton!
     @IBOutlet weak var operatorsCollectionView: UICollectionView!
     @IBOutlet weak var vouchersNumberPicker: UITextField!
     @IBOutlet weak var voucherAmountCollectionView: UICollectionView!
-    @IBOutlet weak var submitOrderButton: UIButton!
+    @IBOutlet weak var submitOrderButton: BorderedButton!
 
     @IBOutlet weak var amountHeightConstraint: NSLayoutConstraint!
 
     let viewModel = VoucherModelView()
     let disposeBag = DisposeBag()
     let numberPickerView = UIPickerView()
-    let customDoneBtn = UIButton()
+    let customDoneBtn = BorderedButton()
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -32,20 +32,12 @@ class VoucherViewController: UIViewController {
     private func setupUI() {
         setupScrollView()
         setupCollectionViews()
-        setupPaymentButton()
-        setupSubmitOrderButton()
         setupNumberPicker()
         setupAmountCollectionViewLayout()
         setupBindings()
-        updateBorderColors()
         viewModel.isValid
-            .subscribe(onNext: {
-                print("VALID:", $0)
-            })
+            .subscribe(onNext: { print("VALID:", $0) })
             .disposed(by: disposeBag)
-        if #available(iOS 17.0, *) {
-            registerForTraitChanges([UITraitUserInterfaceStyle.self], action: #selector(updateBorderColors))
-        }
     }
 
     private func setupScrollView() {
@@ -60,7 +52,6 @@ class VoucherViewController: UIViewController {
             UINib(nibName: "OperatorCell", bundle: nil),
             forCellWithReuseIdentifier: "OperatorCell"
         )
-
         voucherAmountCollectionView.register(
             UINib(nibName: "AmountCell", bundle: nil),
             forCellWithReuseIdentifier: "AmountCell"
@@ -98,21 +89,11 @@ class VoucherViewController: UIViewController {
         voucherAmountCollectionView.isScrollEnabled = false
     }
 
-    private func setupPaymentButton() {
-        paymentButton.applyOutlinedButtonStyle()
-    }
-
-    private func setupSubmitOrderButton() {
-        submitOrderButton.applyOutlinedButtonStyle()
-        view.bringSubviewToFront(submitOrderButton)
-    }
-
     private func setupNumberPicker() {
         vouchersNumberPicker.inputView = numberPickerView
         vouchersNumberPicker.tintColor = .clear
         vouchersNumberPicker.textAlignment = .center
         vouchersNumberPicker.applyBorderedStyle(cornerRadius: 8)
-
         setupDoneToolbar()
     }
 
@@ -124,12 +105,13 @@ class VoucherViewController: UIViewController {
         config.contentInsets = NSDirectionalEdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16)
 
         customDoneBtn.configuration = config
-        customDoneBtn.applyBorderedStyle(cornerRadius: 8)
+        customDoneBtn.cornerRadius = 8
+        customDoneBtn.borderWidth = 2
+        customDoneBtn.borderColor = UIColor(named: "text") ?? .label
         customDoneBtn.addTarget(self, action: #selector(dismissKeyboard), for: .touchUpInside)
 
         let toolbar = UIToolbar()
         toolbar.sizeToFit()
-
         let doneBarButton = UIBarButtonItem(customView: customDoneBtn)
         let spacer = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
         toolbar.setItems([spacer, doneBarButton], animated: false)
@@ -145,7 +127,6 @@ class VoucherViewController: UIViewController {
         viewModel.isValid
             .bind(to: submitOrderButton.rx.isEnabled)
             .disposed(by: disposeBag)
-
     }
 
     private func bindNumberPicker() {
@@ -183,13 +164,19 @@ class VoucherViewController: UIViewController {
             }
             .disposed(by: disposeBag)
 
-        operatorsCollectionView.rx.modelSelected(Operator.self)
-            .bind(to: viewModel.selectedOperator)
-            .disposed(by: disposeBag)
+        operatorsCollectionView.rx.itemSelected
+            .subscribe(onNext: { [weak self] indexPath in
+                guard let self else { return }
+                let op = self.viewModel.operators.value[indexPath.item]
+                self.viewModel.selectedOperator.accept(op)
 
-        viewModel.selectedOperator
-            .compactMap { $0 }
-            .subscribe(onNext: { print($0.name) })
+                self.operatorsCollectionView.visibleCells
+                    .compactMap { $0 as? OperatorCell }
+                    .forEach { cell in
+                        let cellIndex = self.operatorsCollectionView.indexPath(for: cell)?.item
+                        cell.setSelected(cellIndex == indexPath.item)
+                    }
+            })
             .disposed(by: disposeBag)
     }
 
@@ -199,12 +186,23 @@ class VoucherViewController: UIViewController {
                 cellIdentifier: "AmountCell",
                 cellType: AmountCell.self
             )) { _, amount, cell in
-                cell.amountLabel.text = "\(amount)"
+                cell.configure(amount: "\(amount)")
             }
             .disposed(by: disposeBag)
 
-        voucherAmountCollectionView.rx.modelSelected(Int.self)
-            .bind(to: viewModel.selectedAmount)
+        voucherAmountCollectionView.rx.itemSelected
+            .subscribe(onNext: { [weak self] indexPath in
+                guard let self else { return }
+                let amount = self.viewModel.amounts.value[indexPath.item]
+                self.viewModel.selectedAmount.accept(amount)
+
+                self.voucherAmountCollectionView.visibleCells
+                    .compactMap { $0 as? AmountCell }
+                    .forEach { cell in
+                        let cellIndex = self.voucherAmountCollectionView.indexPath(for: cell)?.item
+                        cell.setSelected(cellIndex == indexPath.item)
+                    }
+            })
             .disposed(by: disposeBag)
 
         viewModel.operators
@@ -215,24 +213,31 @@ class VoucherViewController: UIViewController {
             .disposed(by: disposeBag)
     }
 
-    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
-        super.traitCollectionDidChange(previousTraitCollection)
-        if #unavailable(iOS 17.0) {
-            if traitCollection.hasDifferentColorAppearance(comparedTo: previousTraitCollection) {
-                updateBorderColors()
-            }
+    @objc private func dismissKeyboard() {
+        view.endEditing(true)
+    }
+}
+
+@IBDesignable
+class BorderedButton: UIButton {
+
+    @IBInspectable var cornerRadius: CGFloat = 10 {
+        didSet {
+            layer.masksToBounds = true
+            layer.cornerRadius = cornerRadius
         }
     }
 
-    @objc private func updateBorderColors() {
-        let borderColor = UIColor(named: "text")?.cgColor
-        paymentButton.layer.borderColor = borderColor
-        vouchersNumberPicker.layer.borderColor = borderColor
-        customDoneBtn.layer.borderColor = borderColor
+    @IBInspectable var borderWidth: CGFloat = 2 {
+        didSet { layer.borderWidth = borderWidth }
     }
 
-    @objc private func dismissKeyboard() {
-        view.endEditing(true)
+    @IBInspectable var borderColor: UIColor = .text {
+        didSet { layer.borderColor = borderColor.cgColor }
+    }
+
+    @IBInspectable var fillColor: UIColor = .clear {
+        didSet { backgroundColor = fillColor }
     }
 }
 
@@ -246,19 +251,5 @@ extension UIView {
         layer.cornerRadius = cornerRadius
         layer.masksToBounds = true
         layer.borderColor = borderColor?.cgColor
-    }
-}
-
-extension UIButton {
-    func applyPrimaryButtonStyle() {
-        backgroundColor = UIColor(named: "primary")
-        setTitleColor(.white, for: .normal)
-        applyBorderedStyle(borderWidth: 0, cornerRadius: 10)
-    }
-
-    func applyOutlinedButtonStyle() {
-        backgroundColor = .clear
-        setTitleColor(UIColor(named: "text"), for: .normal)
-        applyBorderedStyle(borderWidth: 2, cornerRadius: 10)
     }
 }

@@ -27,12 +27,12 @@
             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
             <subviews>
                 <scrollView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="oTk-sB-wuF">
-                    <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
+                    <rect key="frame" x="0.0" y="0.0" width="393" height="743"/>
                     <subviews>
                         <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="htM-Aw-mfp" userLabel="ContentView">
                             <rect key="frame" x="0.0" y="0.0" width="393" height="1500"/>
                             <subviews>
-                                <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" id="eaI-4c-ccX">
+                                <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" id="eaI-4c-ccX" customClass="BorderedButton" customModule="EVoucher" customModuleProvider="target">
                                     <rect key="frame" x="21" y="63" width="350" height="81"/>
                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                     <color key="tintColor" name="surface"/>
@@ -42,6 +42,20 @@
                                         <color key="baseForegroundColor" name="text"/>
                                         <color key="baseBackgroundColor" name="primary"/>
                                     </buttonConfiguration>
+                                    <userDefinedRuntimeAttributes>
+                                        <userDefinedRuntimeAttribute type="color" keyPath="borderColor">
+                                            <color key="value" name="text"/>
+                                        </userDefinedRuntimeAttribute>
+                                        <userDefinedRuntimeAttribute type="color" keyPath="fillColor">
+                                            <color key="value" name="primary"/>
+                                        </userDefinedRuntimeAttribute>
+                                        <userDefinedRuntimeAttribute type="number" keyPath="borderWidth">
+                                            <real key="value" value="2"/>
+                                        </userDefinedRuntimeAttribute>
+                                        <userDefinedRuntimeAttribute type="number" keyPath="cornerRadius">
+                                            <real key="value" value="10"/>
+                                        </userDefinedRuntimeAttribute>
+                                    </userDefinedRuntimeAttributes>
                                 </button>
                                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Operator" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="yoN-KY-7M6">
                                     <rect key="frame" x="21" y="152" width="89" height="28"/>
@@ -120,13 +134,13 @@
                         </view>
                     </subviews>
                     <constraints>
-                        <constraint firstAttribute="bottom" secondItem="htM-Aw-mfp" secondAttribute="bottom" constant="-648" id="Bag-TN-i5x"/>
+                        <constraint firstAttribute="bottom" secondItem="htM-Aw-mfp" secondAttribute="bottom" constant="-757" id="Bag-TN-i5x"/>
                         <constraint firstItem="htM-Aw-mfp" firstAttribute="top" secondItem="oTk-sB-wuF" secondAttribute="top" id="DwT-Fa-NCV"/>
                         <constraint firstItem="htM-Aw-mfp" firstAttribute="centerX" secondItem="oTk-sB-wuF" secondAttribute="centerX" id="OWK-Jk-i6w"/>
                         <constraint firstAttribute="trailing" secondItem="htM-Aw-mfp" secondAttribute="trailing" id="Pp0-4o-ujI"/>
                     </constraints>
                 </scrollView>
-                <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="ppd-IC-OpY">
+                <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="ppd-IC-OpY" customClass="BorderedButton" customModule="EVoucher" customModuleProvider="target">
                     <rect key="frame" x="16" y="702" width="361" height="66"/>
                     <constraints>
                         <constraint firstAttribute="height" constant="66" id="btn-height-66"/>
@@ -137,6 +151,20 @@
                         <color key="baseForegroundColor" name="text"/>
                         <color key="baseBackgroundColor" name="primary"/>
                     </buttonConfiguration>
+                    <userDefinedRuntimeAttributes>
+                        <userDefinedRuntimeAttribute type="color" keyPath="borderColor">
+                            <color key="value" name="text"/>
+                        </userDefinedRuntimeAttribute>
+                        <userDefinedRuntimeAttribute type="number" keyPath="borderWidth">
+                            <real key="value" value="2"/>
+                        </userDefinedRuntimeAttribute>
+                        <userDefinedRuntimeAttribute type="color" keyPath="fillColor">
+                            <color key="value" name="primary"/>
+                        </userDefinedRuntimeAttribute>
+                        <userDefinedRuntimeAttribute type="number" keyPath="cornerRadius">
+                            <real key="value" value="0.0"/>
+                        </userDefinedRuntimeAttribute>
+                    </userDefinedRuntimeAttributes>
                 </button>
             </subviews>
             <viewLayoutGuide key="safeArea" id="vUN-kp-3ea"/>
@@ -144,7 +172,7 @@
             <constraints>
                 <constraint firstItem="oTk-sB-wuF" firstAttribute="leading" secondItem="vUN-kp-3ea" secondAttribute="leading" id="8XT-pS-4BE"/>
                 <constraint firstItem="oTk-sB-wuF" firstAttribute="top" secondItem="iN0-l3-epB" secondAttribute="top" id="BKA-Ep-rGj"/>
-                <constraint firstAttribute="bottom" secondItem="oTk-sB-wuF" secondAttribute="bottom" id="Iux-WT-taz"/>
+                <constraint firstAttribute="bottom" secondItem="oTk-sB-wuF" secondAttribute="bottom" constant="109" id="Iux-WT-taz"/>
                 <constraint firstItem="oTk-sB-wuF" firstAttribute="leading" secondItem="vUN-kp-3ea" secondAttribute="leading" id="KJ2-GX-dSD"/>
                 <constraint firstItem="htM-Aw-mfp" firstAttribute="width" secondItem="iN0-l3-epB" secondAttribute="width" id="Kfn-7O-dsR"/>
                 <constraint firstItem="oTk-sB-wuF" firstAttribute="trailing" secondItem="vUN-kp-3ea" secondAttribute="trailing" id="LGD-01-Ah3"/>
