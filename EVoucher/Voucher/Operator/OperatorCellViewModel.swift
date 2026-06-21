@@ -14,9 +14,9 @@ class OperatorCellViewModel {
     let logo: BehaviorRelay<UIImage?>
     let isSelected: BehaviorRelay<Bool>
 
-    init(model: Operator, isSelected: Bool = false) {
+    init(model: Operator) {
         self.name = BehaviorRelay<String?>(value: model.name)
         self.logo = BehaviorRelay<UIImage?>(value: model.logo)
-        self.isSelected = BehaviorRelay<Bool>(value: isSelected)
+        self.isSelected = BehaviorRelay<Bool>(value: model.isSelected)
     }
 }

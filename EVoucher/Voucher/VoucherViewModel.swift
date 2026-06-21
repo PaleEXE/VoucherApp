@@ -3,7 +3,7 @@ import RxSwift
 import RxCocoa
 
 class VoucherViewModel {
-    let operators = BehaviorRelay<[Operator]>(value: [
+    var operators = BehaviorRelay<[Operator]>(value: [
         Operator(name: "Patata", logoPath: "patata"),
         Operator(name: "Banana", logoPath: "banana"),
         Operator(name: "Ananas", logoPath: "ananas"),
@@ -31,7 +31,6 @@ class VoucherViewModel {
     let amounts = BehaviorRelay<[Amount]>(value: Array(1...20).map { Amount(value: $0 * 10) })
     let numberVouchers = BehaviorRelay<[Int]>(value: Array(1...10))
 
-    let tappedOperator = BehaviorRelay<Operator?>(value: nil)
     let selectedOperator = BehaviorRelay<Operator?>(value: nil)
     let selectedAmount = BehaviorRelay<Amount?>(value: nil)
     let selectedNumberVouchers = BehaviorRelay<Int?>(value: 1)
@@ -46,5 +45,16 @@ class VoucherViewModel {
             .map { op, amount, vouchers in
                 return op != nil && amount != nil && vouchers != nil
             }
+
+        selectedOperator
+            .subscribe(onNext: { [weak self] currentSelectedOp in
+                guard let self else { return }
+                self.operators.value.forEach { op in
+                    op.isSelected = false
+                }
+                currentSelectedOp?.isSelected = true
+                self.operators.accept(self.operators.value)
+            })
+            .disposed(by: disposeBag)
     }
 }

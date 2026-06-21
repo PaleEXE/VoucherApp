@@ -7,8 +7,10 @@
 
 struct Amount {
     let value: Int
+    var isSelected: Bool
 
-    init(value: Int) {
+    init(value: Int, isSelected: Bool = false) {
         self.value = value
+        self.isSelected = isSelected
     }
 }

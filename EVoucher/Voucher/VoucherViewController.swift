@@ -12,7 +12,7 @@ class VoucherViewController: UIViewController {
     @IBOutlet weak var submitOrderButton: BorderedButton!
     @IBOutlet weak var amountHeightConstraint: NSLayoutConstraint!
     @IBOutlet weak var NumberVoucherStackView: UIStackView!
-    @IBOutlet weak var AmountView: UILabel!
+    @IBOutlet weak var AmountLabel: UILabel!
 
     let viewModel = VoucherViewModel()
     let disposeBag = DisposeBag()
@@ -150,11 +150,6 @@ class VoucherViewController: UIViewController {
     }
 
     private func bindNumberPicker() {
-        /* if let firstQuantity = viewModel.numberVouchers.value.first { //need to changed as RXSwift
-            vouchersNumberPicker.text = "\(firstQuantity)"
-            viewModel.selectedNumberVouchers.accept(firstQuantity) // if this updeated will be reflect to vouchersNumberPicker
-        } */
-
         viewModel.selectedNumberVouchers
             .map({ $0 != nil ? "\($0!)" : "1" })
             .asDriver(onErrorJustReturn: "SUI")
@@ -171,15 +166,6 @@ class VoucherViewController: UIViewController {
             }
             .disposed(by: disposeBag)
 
-        /* numberPickerView.rx.itemSelected
-            .bind(onNext: { [weak self] row, _ in
-                guard let self else { return }
-                let value = self.viewModel.numberVouchers.value[row]
-                self.vouchersNumberPicker.text = "\(value)"
-                self.viewModel.selectedNumberVouchers.accept(value) // this will be changed based in comment above
-            })
-            .disposed(by: disposeBag) */
-
         numberPickerView.rx.modelSelected(Int.self)
             .map { $0.first }
             .compactMap { $0 }
@@ -192,32 +178,15 @@ class VoucherViewController: UIViewController {
             .bind(to: operatorsCollectionView.rx.items(
                 cellIdentifier: "OperatorCell",
                 cellType: OperatorCell.self
-            )) { [weak self] _, op, cell in
-                guard let self else { return }
+            )) { _, op, cell in
                 let vm = OperatorCellViewModel(model: op)
                 cell.bind(to: vm)
-
-                let isSelected = self.viewModel.selectedOperator.value?.name == op.name
-                vm.isSelected.accept(isSelected)
-
-                self.viewModel.selectedOperator
-                    .map { $0?.name == op.name }
-                    .distinctUntilChanged()
-                    .bind(to: vm.isSelected)
-                    .disposed(by: cell.disposeBag)
             }
             .disposed(by: disposeBag)
 
         operatorsCollectionView.rx.modelSelected(Operator.self)
             .subscribe(onNext: { [weak self] tappedOperator in
-                guard let self = self else { return }
-                let current = self.viewModel.selectedOperator.value
-
-                if current?.name == tappedOperator.name {
-                    self.viewModel.selectedOperator.accept(nil)
-                } else {
-                    self.viewModel.selectedOperator.accept(tappedOperator)
-                }
+                self?.viewModel.selectedOperator.accept(tappedOperator)
             })
             .disposed(by: disposeBag)
     }
@@ -264,7 +233,7 @@ class VoucherViewController: UIViewController {
         viewModel.selectedAmount
             .map({ $0 != nil ? "\($0!.value)" : ""})
             .asDriver(onErrorJustReturn: "ERR")
-            .drive(AmountView.rx.text)
+            .drive(AmountLabel.rx.text)
             .disposed(by: disposeBag)
     }
 

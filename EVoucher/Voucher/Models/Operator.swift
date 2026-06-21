@@ -6,12 +6,14 @@
 //
 import UIKit
 
-struct Operator {
+class Operator {
     let name: String
     let logo: UIImage
+    var isSelected: Bool
 
-    init(name: String, logoPath: String) {
+    init(name: String, logoPath: String, isSelected: Bool = false) {
         self.logo = UIImage(named: logoPath) ?? UIImage()
         self.name = name
+        self.isSelected = isSelected
     }
 }

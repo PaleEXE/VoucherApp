@@ -10,7 +10,7 @@
     <objects>
         <placeholder placeholderIdentifier="IBFilesOwner" id="-1" userLabel="File's Owner" customClass="VoucherViewController" customModule="EVoucher" customModuleProvider="target">
             <connections>
-                <outlet property="AmountView" destination="WEz-4F-2i4" id="khI-dl-b1m"/>
+                <outlet property="AmountLabel" destination="WEz-4F-2i4" id="khI-dl-b1m"/>
                 <outlet property="ContentView" destination="htM-Aw-mfp" id="eS5-xL-Yu1"/>
                 <outlet property="NumberVoucherStackView" destination="JgS-e4-G0I" id="UpI-NP-Cv4"/>
                 <outlet property="OperatorsCollectionView" destination="g9G-Di-Hwq" id="Mzh-eR-N3g"/>
