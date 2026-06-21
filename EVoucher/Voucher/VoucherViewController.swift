@@ -10,10 +10,11 @@ class VoucherViewController: UIViewController {
     @IBOutlet weak var vouchersNumberPicker: UITextField!
     @IBOutlet weak var voucherAmountCollectionView: UICollectionView!
     @IBOutlet weak var submitOrderButton: BorderedButton!
-
     @IBOutlet weak var amountHeightConstraint: NSLayoutConstraint!
+    @IBOutlet weak var NumberVoucherStackView: UIStackView!
+    @IBOutlet weak var AmountView: UILabel!
 
-    let viewModel = VoucherModelView()
+    let viewModel = VoucherViewModel()
     let disposeBag = DisposeBag()
     let numberPickerView = UIPickerView()
     let customDoneBtn = BorderedButton()
@@ -23,6 +24,24 @@ class VoucherViewController: UIViewController {
         title = "E-Voucher"
         setupUI()
     }
+
+    private func setupTapToClose() {
+        let tapGesture = UITapGestureRecognizer()
+        tapGesture.cancelsTouchesInView = false
+        view.addGestureRecognizer(tapGesture)
+
+        tapGesture.rx.event
+            .filter { [weak self] gesture in
+                guard let self = self else { return false }
+
+                let touchLocation = gesture.location(in: self.view)
+                return !self.numberPickerView.frame.contains(touchLocation)
+            }
+            .bind(onNext: { [weak self] _ in
+                self?.view.endEditing(true)
+            })
+            .disposed(by: disposeBag)
+        }
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
@@ -35,13 +54,11 @@ class VoucherViewController: UIViewController {
         setupNumberPicker()
         setupAmountCollectionViewLayout()
         setupBindings()
-        viewModel.isValid
-            .subscribe(onNext: { print("VALID:", $0) })
-            .disposed(by: disposeBag)
+        setupTapToClose()
     }
 
     private func setupScrollView() {
-        scrollView.contentInset = UIEdgeInsets(top: 0, left: 0, bottom: 100, right: 0)
+        scrollView.contentInset = UIEdgeInsets(top: 0, left: 0, bottom: 200, right: 0)
     }
 
     private func setupCollectionViews() {
@@ -64,7 +81,6 @@ class VoucherViewController: UIViewController {
         layout.itemSize = CGSize(width: 140, height: operatorsCollectionView.bounds.height)
         layout.minimumLineSpacing = 12
         layout.minimumInteritemSpacing = 0
-        layout.sectionInset = UIEdgeInsets(top: 0, left: 20, bottom: 0, right: 20)
     }
 
     private func updateCollectionViewHeight() {
@@ -93,7 +109,6 @@ class VoucherViewController: UIViewController {
         vouchersNumberPicker.inputView = numberPickerView
         vouchersNumberPicker.tintColor = .clear
         vouchersNumberPicker.textAlignment = .center
-        vouchersNumberPicker.applyBorderedStyle(cornerRadius: 8)
         setupDoneToolbar()
     }
 
@@ -102,7 +117,6 @@ class VoucherViewController: UIViewController {
         config.title = "Done"
         config.baseBackgroundColor = UIColor(named: "primary")
         config.baseForegroundColor = UIColor(named: "text")
-        config.contentInsets = NSDirectionalEdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16)
 
         customDoneBtn.configuration = config
         customDoneBtn.cornerRadius = 8
@@ -127,13 +141,26 @@ class VoucherViewController: UIViewController {
         viewModel.isValid
             .bind(to: submitOrderButton.rx.isEnabled)
             .disposed(by: disposeBag)
+
+        viewModel.selectedOperator
+            .subscribe(onNext: { [weak self] value in
+                self?.NumberVoucherStackView.isHidden = value?.name != "Abdo"
+            })
+            .disposed(by: disposeBag)
     }
 
     private func bindNumberPicker() {
-        if let firstQuantity = viewModel.numberVouchers.value.first {
+        /* if let firstQuantity = viewModel.numberVouchers.value.first { //need to changed as RXSwift
             vouchersNumberPicker.text = "\(firstQuantity)"
-            viewModel.selectedNumberVouchers.accept(firstQuantity)
-        }
+            viewModel.selectedNumberVouchers.accept(firstQuantity) // if this updeated will be reflect to vouchersNumberPicker
+        } */
+
+        viewModel.selectedNumberVouchers
+            .map({ $0 != nil ? "\($0!)" : "1" })
+            .asDriver(onErrorJustReturn: "SUI")
+            .drive(vouchersNumberPicker.rx.text)
+            .disposed(by: disposeBag)
+
 
         viewModel.numberVouchers
             .bind(to: numberPickerView.rx.itemAttributedTitles) { _, item in
@@ -144,13 +171,19 @@ class VoucherViewController: UIViewController {
             }
             .disposed(by: disposeBag)
 
-        numberPickerView.rx.itemSelected
+        /* numberPickerView.rx.itemSelected
             .bind(onNext: { [weak self] row, _ in
                 guard let self else { return }
                 let value = self.viewModel.numberVouchers.value[row]
                 self.vouchersNumberPicker.text = "\(value)"
-                self.viewModel.selectedNumberVouchers.accept(value)
+                self.viewModel.selectedNumberVouchers.accept(value) // this will be changed based in comment above
             })
+            .disposed(by: disposeBag) */
+
+        numberPickerView.rx.modelSelected(Int.self)
+            .map { $0.first }
+            .compactMap { $0 }
+            .bind(to: viewModel.selectedNumberVouchers)
             .disposed(by: disposeBag)
     }
 
@@ -159,23 +192,32 @@ class VoucherViewController: UIViewController {
             .bind(to: operatorsCollectionView.rx.items(
                 cellIdentifier: "OperatorCell",
                 cellType: OperatorCell.self
-            )) { _, item, cell in
-                cell.configure(with: item)
+            )) { [weak self] _, op, cell in
+                guard let self else { return }
+                let vm = OperatorCellViewModel(model: op)
+                cell.bind(to: vm)
+
+                let isSelected = self.viewModel.selectedOperator.value?.name == op.name
+                vm.isSelected.accept(isSelected)
+
+                self.viewModel.selectedOperator
+                    .map { $0?.name == op.name }
+                    .distinctUntilChanged()
+                    .bind(to: vm.isSelected)
+                    .disposed(by: cell.disposeBag)
             }
             .disposed(by: disposeBag)
 
-        operatorsCollectionView.rx.itemSelected
-            .subscribe(onNext: { [weak self] indexPath in
-                guard let self else { return }
-                let op = self.viewModel.operators.value[indexPath.item]
-                self.viewModel.selectedOperator.accept(op)
+        operatorsCollectionView.rx.modelSelected(Operator.self)
+            .subscribe(onNext: { [weak self] tappedOperator in
+                guard let self = self else { return }
+                let current = self.viewModel.selectedOperator.value
 
-                self.operatorsCollectionView.visibleCells
-                    .compactMap { $0 as? OperatorCell }
-                    .forEach { cell in
-                        let cellIndex = self.operatorsCollectionView.indexPath(for: cell)?.item
-                        cell.setSelected(cellIndex == indexPath.item)
-                    }
+                if current?.name == tappedOperator.name {
+                    self.viewModel.selectedOperator.accept(nil)
+                } else {
+                    self.viewModel.selectedOperator.accept(tappedOperator)
+                }
             })
             .disposed(by: disposeBag)
     }
@@ -185,24 +227,31 @@ class VoucherViewController: UIViewController {
             .bind(to: voucherAmountCollectionView.rx.items(
                 cellIdentifier: "AmountCell",
                 cellType: AmountCell.self
-            )) { _, amount, cell in
-                cell.configure(amount: "\(amount)")
+            )) { [weak self] _, amount, cell in
+                guard let self else { return }
+                let vm = AmountCellViewModel(model: amount)
+                cell.bind(to: vm)
+
+                let isSelected = self.viewModel.selectedAmount.value?.value == amount.value
+                vm.isSelected.accept(isSelected)
+
+                self.viewModel.selectedAmount
+                    .map { $0?.value == amount.value }
+                    .distinctUntilChanged()
+                    .bind(to: vm.isSelected)
+                    .disposed(by: cell.disposeBag)
             }
             .disposed(by: disposeBag)
 
         voucherAmountCollectionView.rx.itemSelected
-            .subscribe(onNext: { [weak self] indexPath in
-                guard let self else { return }
-                let amount = self.viewModel.amounts.value[indexPath.item]
-                self.viewModel.selectedAmount.accept(amount)
-
-                self.voucherAmountCollectionView.visibleCells
-                    .compactMap { $0 as? AmountCell }
-                    .forEach { cell in
-                        let cellIndex = self.voucherAmountCollectionView.indexPath(for: cell)?.item
-                        cell.setSelected(cellIndex == indexPath.item)
-                    }
-            })
+            .map { [weak self] indexPath -> Amount? in
+                self?.viewModel.amounts.value[indexPath.row]
+            }
+            .compactMap { $0 }
+            .withLatestFrom(viewModel.selectedAmount) { tapped, current in
+                current?.value == tapped?.value ? nil : tapped
+            }
+            .bind(to: viewModel.selectedAmount)
             .disposed(by: disposeBag)
 
         viewModel.operators
@@ -211,45 +260,15 @@ class VoucherViewController: UIViewController {
                 self?.updateCollectionViewHeight()
             })
             .disposed(by: disposeBag)
+
+        viewModel.selectedAmount
+            .map({ $0 != nil ? "\($0!.value)" : ""})
+            .asDriver(onErrorJustReturn: "ERR")
+            .drive(AmountView.rx.text)
+            .disposed(by: disposeBag)
     }
 
     @objc private func dismissKeyboard() {
         view.endEditing(true)
-    }
-}
-
-@IBDesignable
-class BorderedButton: UIButton {
-
-    @IBInspectable var cornerRadius: CGFloat = 10 {
-        didSet {
-            layer.masksToBounds = true
-            layer.cornerRadius = cornerRadius
-        }
-    }
-
-    @IBInspectable var borderWidth: CGFloat = 2 {
-        didSet { layer.borderWidth = borderWidth }
-    }
-
-    @IBInspectable var borderColor: UIColor = .text {
-        didSet { layer.borderColor = borderColor.cgColor }
-    }
-
-    @IBInspectable var fillColor: UIColor = .clear {
-        didSet { backgroundColor = fillColor }
-    }
-}
-
-extension UIView {
-    func applyBorderedStyle(
-        borderWidth: CGFloat = 2,
-        cornerRadius: CGFloat = 10,
-        borderColor: UIColor? = UIColor(named: "text")
-    ) {
-        layer.borderWidth = borderWidth
-        layer.cornerRadius = cornerRadius
-        layer.masksToBounds = true
-        layer.borderColor = borderColor?.cgColor
     }
 }
